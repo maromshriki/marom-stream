@@ -1,0 +1,58 @@
+name: CI - Build & Push
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            repository: maromstream-backend
+            dockerfile: Server/MagicStreamServer/Dockerfile
+            context: Server/MagicStreamServer
+            image_tag: backend
+          - name: frontend
+            repository: maromstream-frontend
+            dockerfile: Client/magic-stream-client/Dockerfile
+            context: Client/magic-stream-client
+            image_tag: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME || 'arn:aws:iam::ACCOUNT_ID:role/github-actions-role' }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+      - name: Build and push ${{ matrix.name }} image
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          IMAGE_TAG="${{ github.sha }}"
+          REPOSITORY="${{ matrix.repository }}"
+
+          docker build -t "$REPOSITORY:$IMAGE_TAG" -f "${{ matrix.dockerfile }}" "${{ matrix.context }}"
+          docker tag "$REPOSITORY:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker tag "$REPOSITORY:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:${{ matrix.image_tag }}"
+
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:${{ matrix.image_tag }}"
