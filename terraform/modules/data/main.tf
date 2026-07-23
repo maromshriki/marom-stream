@@ -1,8 +1,3 @@
-resource "aws_db_subnet_group" "db_subnets" {
-  name       = "db-subnet-group"
-  subnet_ids = var.private_subnet_ids
-}
-
 resource "aws_security_group" "db_sg" {
   vpc_id = var.vpc_id
 
