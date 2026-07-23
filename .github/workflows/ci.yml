@@ -1,14 +1,21 @@
-name: CI - Build & Push
+# CI workflow for building, scanning, and pushing backend/frontend Docker images.
+# Runs on pushes to main. Uses a matrix to build both backend and frontend images.
+# Includes secret scanning, container vulnerability scanning, and ECR deployment.
+
+name: CI - Build, Scan & Push
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 env:
   AWS_REGION: us-east-1
 
 jobs:
-  build-and-push:
+
+  build-scan-push:
+
     runs-on: ubuntu-latest
 
     permissions:
@@ -18,11 +25,13 @@ jobs:
     strategy:
       matrix:
         include:
+
           - name: backend
             repository: maromstream-backend
             dockerfile: Server/MagicStreamServer/Dockerfile
             context: Server/MagicStreamServer
             image_tag: backend
+
           - name: frontend
             repository: maromstream-frontend
             dockerfile: Client/magic-stream-client/Dockerfile
@@ -30,29 +39,106 @@ jobs:
             image_tag: frontend
 
     steps:
-      - uses: actions/checkout@v4
 
-      - name: Configure AWS (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME || 'arn:aws:iam::ACCOUNT_ID:role/github-actions-role' }}
-          aws-region: ${{ env.AWS_REGION }}
+    # -------------------------
+    # Checkout Code
+    # -------------------------
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Login to ECR
-        run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+    # -------------------------
+    # Secret Scanning
+    # -------------------------
+    - name: Gitleaks scan
+      uses: gitleaks/gitleaks-action@v2
+      # Scan the repository for leaked secrets before building any images.
 
-      - name: Build and push ${{ matrix.name }} image
-        run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
-          IMAGE_TAG="${{ github.sha }}"
-          REPOSITORY="${{ matrix.repository }}"
+    # -------------------------
+    # IaC Security Scan
+    # -------------------------
+    - name: Trivy IaC scan
+      uses: aquasecurity/trivy-action@master
+      # Scan Terraform configuration files for IaC security and misconfiguration issues.
+      with:
+        scan-type: iac
+        scan-ref: ./terraform
+        format: table
+        severity: HIGH,CRITICAL
+        exit-code: 1
 
-          docker build -t "$REPOSITORY:$IMAGE_TAG" -f "${{ matrix.dockerfile }}" "${{ matrix.context }}"
-          docker tag "$REPOSITORY:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-          docker tag "$REPOSITORY:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:${{ matrix.image_tag }}"
+    # -------------------------
+    # Docker Build
+    # -------------------------
+    - name: Build Docker image
+      run: |
+        docker build \
+          -t ${{ matrix.repository }}:${{ github.sha }} \
+          -f ${{ matrix.dockerfile }} \
+          ${{ matrix.context }}
+      # Build the Docker image for the current matrix entry.
 
-          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-          docker push "$REGISTRY/$REPOSITORY:${{ matrix.image_tag }}"
+    # -------------------------
+    # Container Security Scan
+    # -------------------------
+    - name: Trivy image scan
+      uses: aquasecurity/trivy-action@v0.9.0
+      # Pin to a stable Trivy release instead of tracking master.
+      with:
+        image-ref: '${{ matrix.repository }}:${{ github.sha }}'
+        format: table
+        severity: HIGH,CRITICAL
+        exit-code: 1
+
+    # -------------------------
+    # AWS Authentication
+    # -------------------------
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        aws-region: ${{ env.AWS_REGION }}
+      # Authenticate to AWS using OIDC, avoiding long-lived credentials.
+
+    # -------------------------
+    # ECR Login
+    # -------------------------
+    - name: Login to Amazon ECR
+      run: |
+        ACCOUNT_ID=$(aws sts get-caller-identity \
+          --query Account \
+          --output text)
+
+        aws ecr get-login-password \
+          --region $AWS_REGION | \
+          docker login \
+          --username AWS \
+          --password-stdin \
+          $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      # Login to ECR so we can push the built image.
+
+    # -------------------------
+    # Tag & Push
+    # -------------------------
+    - name: Push image to ECR
+      run: |
+        ACCOUNT_ID=$(aws sts get-caller-identity \
+          --query Account \
+          --output text)
+
+        REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+        IMAGE="$REGISTRY/${{ matrix.repository }}"
+
+        docker tag \
+          ${{ matrix.repository }}:${{ github.sha }} \
+          $IMAGE:${{ github.sha }}
+
+        docker tag \
+          ${{ matrix.repository }}:${{ github.sha }} \
+          $IMAGE:${{ matrix.image_tag }}
+
+        docker push \
+          $IMAGE:${{ github.sha }}
+
+        docker push \
+          $IMAGE:${{ matrix.image_tag }}
+      # Tag and push both the SHA-based image and the stable image tag.
