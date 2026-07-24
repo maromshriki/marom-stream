@@ -68,7 +68,9 @@ const Register = () => {
         const fetchGenres = async () => {
         try {
             const response = await axiosClient.get('/genres');
-            setGenres(response.data);
+            console.log("GENRES RESPONSE:", response.data);
+            console.log("IS ARRAY:", Array.isArray(response.data));
+            setGenres(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Error fetching movie genres:', error);
         }

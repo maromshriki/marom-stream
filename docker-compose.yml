@@ -4,29 +4,31 @@ services:
   mongo:
     image: mongo:latest
     container_name: mongo
-    expose:
-      - "27017"
+    restart: unless-stopped
     volumes:
       - mongo_data:/data/db
 
   backend:
-    build: ./Server/MagicStreamServer
+    build:
+      context: ./Server/MagicStreamServer
     container_name: magicstream-backend
     ports:
       - "8080:8080"
     environment:
-      - MONGODB_URI=mongodb://mongo:27017
-      - DATABASE_NAME=magicstream
-      - ALLOWED_ORIGINS=http://localhost:5173
+      MONGODB_URI: mongodb://mongo:27017
+      DATABASE_NAME: magicstream
+      ALLOWED_ORIGINS: http://localhost
     depends_on:
       - mongo
+
   frontend:
-    build: ./Client/magic-stream-client
+    build:
+      context: ./Client/magic-stream-client
     container_name: magicstream-frontend
     ports:
-      - "5173:5173"
+      - "80:80"
     depends_on:
       - backend
-    command: npm run dev -- --host 0.0.0.0  
+
 volumes:
   mongo_data:
