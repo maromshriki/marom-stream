@@ -20,6 +20,7 @@ resource "aws_launch_template" "backend" {
 
     systemctl enable docker
     systemctl start docker
+    usermod -aG docker ec2-user
 
     REGION="us-east-1"
     REGISTRY="$(echo "${var.backend_repository_url}" | cut -d'/' -f1)"
@@ -58,6 +59,7 @@ resource "aws_launch_template" "frontend" {
 
     systemctl enable docker
     systemctl start docker
+    usermod -aG docker ec2-user
 
     REGION="us-east-1"
     REGISTRY="$(echo "${var.frontend_repository_url}" | cut -d'/' -f1)"

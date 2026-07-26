@@ -17,8 +17,8 @@ resource "aws_docdb_subnet_group" "docdb_subnet_group" {
 resource "aws_docdb_cluster" "docdb" {
   cluster_identifier      = "docdb-cluster"
   engine                  = "docdb"
-  master_username         = "admin"
-  master_password         = "Admin123456!"
+  master_username         = var.docdb_username
+  master_password         = var.docdb_password
   backup_retention_period = 1
   preferred_backup_window = "07:00-09:00"
   skip_final_snapshot     = true

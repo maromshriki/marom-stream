@@ -78,6 +78,12 @@ jobs:
       # Build the Docker image for the current matrix entry.
 
     # -------------------------
+    # Optional local verification
+    # -------------------------
+    - name: Show workflow readiness
+      run: echo "CI workflow is ready to build and push images."
+
+    # -------------------------
     # Container Security Scan
     # -------------------------
     - name: Trivy image scan

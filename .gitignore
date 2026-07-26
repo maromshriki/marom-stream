@@ -22,3 +22,5 @@ Server/MagicStreamServer/.env
 *.env
 
 
+terraform.tfvars
+*.auto.tfvars
