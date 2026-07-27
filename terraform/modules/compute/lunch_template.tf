@@ -31,6 +31,7 @@ resource "aws_launch_template" "backend" {
     docker pull "${var.backend_repository_url}:backend"
     docker run -d \
       --name backend \
+      --restart always \
       -p 8080:8080 \
       -e PORT=8080 \
       -e DB_HOST=${var.db_endpoint} \
@@ -70,6 +71,7 @@ resource "aws_launch_template" "frontend" {
     docker pull "${var.frontend_repository_url}:frontend"
     docker run -d \
       --name frontend \
+      --restart always \
       -p 80:80 \
       "${var.frontend_repository_url}:frontend"
   EOF

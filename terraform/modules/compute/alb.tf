@@ -11,13 +11,31 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.app_alb.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.acm_certificate_arn
+
+  default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.app_tg.arn
   }
 }
 
 resource "aws_lb_listener_rule" "frontend" {
-  listener_arn = aws_lb_listener.http.arn
+  listener_arn = aws_lb_listener.https.arn
   priority     = 100
 
   action {
@@ -27,8 +45,24 @@ resource "aws_lb_listener_rule" "frontend" {
 
   condition {
     path_pattern {
-      values = ["/"]
+      values = ["/*"]
     }
+  }
+}
+
+data "aws_route53_zone" "selected" {
+  name         = var.domain_name
+  private_zone = false
+}
+
+resource "aws_route53_record" "frontend_alias" {
+  zone_id = data.aws_route53_zone.selected.zone_id
+  name    = var.domain_name
+  type    = "A"
+  alias {
+    name                   = aws_lb.app_alb.dns_name
+    zone_id                = aws_lb.app_alb.zone_id
+    evaluate_target_health = true
   }
 }
 

@@ -42,4 +42,7 @@ module "compute" {
   backend_repository_url  = module.ecr.backend_repository_url
   frontend_repository_url = module.ecr.frontend_repository_url
 
+  domain_name           = var.domain_name
+  acm_certificate_arn   = var.acm_certificate_arn
+
 }

@@ -21,6 +21,9 @@ Server/MagicStreamServer/.env
 .env
 *.env
 
+# SSL/certificates
+certs/
+certbot/
 
 terraform.tfvars
 *.auto.tfvars

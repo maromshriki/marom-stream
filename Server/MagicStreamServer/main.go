@@ -40,8 +40,15 @@ func main() {
 			log.Println("Allowed Origin:", origins[i])
 		}
 	} else {
-		origins = []string{"http://localhost:5173"}
-		log.Println("Allowed Origin: http://localhost:5173")
+		origins = []string{
+			"http://localhost:5173",
+			"http://localhost",
+			"https://marom-magic.click",
+			"http://marom-magic.click",
+		}
+		for _, origin := range origins {
+			log.Println("Allowed Origin:", origin)
+		}
 	}
 
 	config := cors.Config{}

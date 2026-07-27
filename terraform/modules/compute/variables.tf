@@ -42,3 +42,15 @@ variable "frontend_repository_url" {
 variable "s3_bucket_name" {
   type = string
 }
+
+variable "domain_name" {
+  description = "Custom domain name for the application"
+  type        = string
+  default     = "marom-magic.click"
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of the ACM certificate for HTTPS"
+  type        = string
+  default     = ""
+}
