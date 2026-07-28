@@ -3,15 +3,29 @@ resource "random_id" "suffix" {
 }
 
 resource "aws_s3_bucket" "app_bucket" {
-  bucket = "flask-app-${random_id.suffix.hex}"
+  bucket = "marom-stream-${random_id.suffix.hex}"
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
+resource "aws_kms_key" "s3_key" {
+  description             = "KMS key for S3 bucket encryption"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "s3-encryption-key"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "app_bucket" {
+
   bucket = aws_s3_bucket.app_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+
+      sse_algorithm = "aws:kms"
+
+      kms_master_key_id = aws_kms_key.s3_key.arn
     }
   }
 }
