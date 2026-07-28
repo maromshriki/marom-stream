@@ -5,33 +5,139 @@ on:
     workflows: ["CI - Build, Scan & Push"]
     types:
       - completed
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
   deploy:
+
+    # רוץ רק אם ה-CI הסתיים בהצלחה
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     runs-on: ubuntu-latest
+
+    # בטיחות - אל תאפשר שני Deploy-ים במקביל
+    concurrency:
+      group: production
+      cancel-in-progress: true
+
+    # עצור את ה-Workflow אחרי 30 דקות אם משהו נתקע
+    timeout-minutes: 30
 
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - name: Configure AWS (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME || 'arn:aws:iam::ACCOUNT_ID:role/github-actions-role' }}
-          aws-region: us-east-1
 
-      - name: Trigger backend instance refresh
-        run: |
-          aws autoscaling start-instance-refresh \
+    
+    # Login ל-AWS באמצעות OIDC
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        aws-region: us-east-1
+
+    # הצגת הקומיט שנפרס
+    - name: Deployment Summary
+      run: |
+        echo "Deploying commit:"
+        echo "${{ github.event.workflow_run.head_sha }}"
+
+    
+    # וידוא שה-ASG קיים
+    
+    - name: Verify Backend ASG
+      run: |
+        aws autoscaling describe-auto-scaling-groups \
+          --auto-scaling-group-names backend-asg
+
+    - name: Verify Frontend ASG
+      run: |
+        aws autoscaling describe-auto-scaling-groups \
+          --auto-scaling-group-names frontend-asg
+
+    
+    # התחלת Rolling Update ל-Backend
+    
+    - name: Refresh Backend
+      run: |
+        aws autoscaling start-instance-refresh \
+          --auto-scaling-group-name backend-asg \
+          --preferences MinHealthyPercentage=90
+
+    
+    # התחלת Rolling Update ל-Frontend
+    
+    - name: Refresh Frontend
+      run: |
+        aws autoscaling start-instance-refresh \
+          --auto-scaling-group-name frontend-asg \
+          --preferences MinHealthyPercentage=90
+
+    
+    # המתנה לסיום ה-Backend Refresh
+    
+    - name: Wait for Backend Refresh
+      run: |
+        while true
+        do
+          STATUS=$(aws autoscaling describe-instance-refreshes \
             --auto-scaling-group-name backend-asg \
-            --preferences MinHealthyPercentage=90
+            --query 'InstanceRefreshes[0].Status' \
+            --output text)
 
-      - name: Trigger frontend instance refresh
-        run: |
-          aws autoscaling start-instance-refresh \
+          echo "Backend Refresh Status: $STATUS"
+
+          if [ "$STATUS" = "Successful" ]; then
+            break
+          fi
+
+          if [ "$STATUS" = "Failed" ] || \
+             [ "$STATUS" = "Cancelled" ]; then
+            exit 1
+          fi
+
+          sleep 30
+        done
+
+    
+    # המתנה לסיום ה-Frontend Refresh
+    
+    - name: Wait for Frontend Refresh
+      run: |
+        while true
+        do
+          STATUS=$(aws autoscaling describe-instance-refreshes \
             --auto-scaling-group-name frontend-asg \
-            --preferences MinHealthyPercentage=90
-            
+            --query 'InstanceRefreshes[0].Status' \
+            --output text)
+
+          echo "Frontend Refresh Status: $STATUS"
+
+          if [ "$STATUS" = "Successful" ]; then
+            break
+          fi
+
+          if [ "$STATUS" = "Failed" ] || \
+             [ "$STATUS" = "Cancelled" ]; then
+            exit 1
+          fi
+
+          sleep 30
+        done
+
+      
+    # בדיקה שהאפליקציה באמת עלתה
+    
+    - name: Health Check
+      run: |
+        curl --fail --retry 10 --retry-delay 10 \
+          https://marom-magic.click
+
+    
+    # סיכום
+    
+    - name: Deployment Completed
+      run: |
+        echo "Deployment completed successfully!"

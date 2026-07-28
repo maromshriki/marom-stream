@@ -42,16 +42,16 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 Push-Location $repoRoot
 try {
     if (-not $SkipTerraform) {
-        Invoke-Step -Name "Initializing Terraform" -Action { terraform -chdir=$terraformDir init -input=false -upgrade }
-        Invoke-Step -Name "Validating Terraform" -Action { terraform -chdir=$terraformDir validate }
+        Invoke-Step -Name "Initializing Terraform" -Action { terraform "-chdir=$terraformDir" init -input=false -upgrade }
+        Invoke-Step -Name "Validating Terraform" -Action { terraform "-chdir=$terraformDir" validate }
 
         if ($ValidateOnly) {
             Write-Host "Validation completed successfully."
             return
         }
 
-        Invoke-Step -Name "Planning Terraform" -Action { terraform -chdir=$terraformDir plan -out=tfplan }
-        Invoke-Step -Name "Applying Terraform" -Action { terraform -chdir=$terraformDir apply -auto-approve tfplan }
+        Invoke-Step -Name "Planning Terraform" -Action { terraform "-chdir=$terraformDir" plan -out=tfplan }
+        Invoke-Step -Name "Applying Terraform" -Action { terraform "-chdir=$terraformDir" apply -auto-approve tfplan }
     }
 
     if (-not $SkipDockerBuild) {

@@ -40,24 +40,44 @@ jobs:
 
     steps:
 
-    # -------------------------
     # Checkout Code
-    # -------------------------
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # -------------------------
     # Secret Scanning
-    # -------------------------
     - name: Gitleaks scan
       uses: gitleaks/gitleaks-action@v2
       # Scan the repository for leaked secrets before building any images.
 
-    # -------------------------
-    # IaC Security Scan
-    # -------------------------
+    - name: Terraform Format
+      run: terraform -chdir=terraform fmt -check -recursive  
+
+    - name: Terraform Init
+      run: terraform -chdir=terraform init -backend=false
+    
+    - name: Terraform Validate
+      run: terraform -chdir=terraform validate
+
+
+    - name: Install TFLint
+      uses: terraform-linters/setup-tflint@v4
+
+    - name: Run TFLint
+      run: |
+          cd terraform
+          tflint --init
+          tflint 
+
+    - name: Checkov
+      uses: bridgecrewio/checkov-action@v12
+      with:
+        directory: ./terraform
+        framework: terraform    
+        soft_fail: false
+      # IaC Security Scan
+    # 
     - name: Trivy IaC scan
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@v0.33.1
       # Scan Terraform configuration files for IaC security and misconfiguration issues.
       with:
         scan-type: iac
@@ -66,9 +86,7 @@ jobs:
         severity: HIGH,CRITICAL
         exit-code: 1
 
-    # -------------------------
     # Docker Build
-    # -------------------------
     - name: Build Docker image
       run: |
         docker build \
@@ -77,17 +95,13 @@ jobs:
           ${{ matrix.context }}
       # Build the Docker image for the current matrix entry.
 
-    # -------------------------
     # Optional local verification
-    # -------------------------
     - name: Show workflow readiness
       run: echo "CI workflow is ready to build and push images."
 
-    # -------------------------
     # Container Security Scan
-    # -------------------------
     - name: Trivy image scan
-      uses: aquasecurity/trivy-action@v0.9.0
+      uses: aquasecurity/trivy-action@v0.33.1
       # Pin to a stable Trivy release instead of tracking master.
       with:
         image-ref: '${{ matrix.repository }}:${{ github.sha }}'
@@ -95,9 +109,7 @@ jobs:
         severity: HIGH,CRITICAL
         exit-code: 1
 
-    # -------------------------
     # AWS Authentication
-    # -------------------------
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -105,9 +117,8 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
       # Authenticate to AWS using OIDC, avoiding long-lived credentials.
 
-    # -------------------------
     # ECR Login
-    # -------------------------
+  
     - name: Login to Amazon ECR
       run: |
         ACCOUNT_ID=$(aws sts get-caller-identity \
