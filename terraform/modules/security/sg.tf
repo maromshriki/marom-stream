@@ -34,7 +34,7 @@ resource "aws_security_group" "frontend_sg" {
   vpc_id = var.vpc_id
 
   ingress {
-    description = "Allow traffic from ALB port 80"
+    description     = "Allow traffic from ALB port 80"
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
@@ -55,7 +55,7 @@ resource "aws_security_group" "backend_sg" {
   vpc_id = var.vpc_id
 
   ingress {
-    description = "Allow traffic from frontend"
+    description     = "Allow traffic from frontend"
     from_port       = 8080
     to_port         = 8080
     protocol        = "tcp"
@@ -76,7 +76,7 @@ resource "aws_security_group" "db_sg" {
   vpc_id = var.vpc_id
 
   ingress {
-    description = "Allow MongoDB traffic from backend"
+    description     = "Allow MongoDB traffic from backend"
     from_port       = 27017
     to_port         = 27017
     protocol        = "tcp"
