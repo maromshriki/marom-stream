@@ -52,5 +52,5 @@ variable "domain_name" {
 variable "acm_certificate_arn" {
   description = "ARN of the ACM certificate for HTTPS"
   type        = string
-  default     = ""
+  default     = "arn:aws:acm:us-east-1:414444871239:certificate/38e2553e-f6e7-4bef-a68d-bf1a1510599f"
 }
