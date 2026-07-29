@@ -50,7 +50,7 @@ jobs:
       env:
        GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
       with:
-       args: detect --source . --no-git
+        fetch-depth: 0
       # Scan the repository for leaked secrets before building any images.
     
     - name: Setup Terraform
