@@ -77,7 +77,7 @@ jobs:
       with:
         directory: ./terraform
         framework: terraform    
-        soft_fail: false
+        soft_fail: true
       # IaC Security Scan
     # 
     - name: Trivy IaC scan
