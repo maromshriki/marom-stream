@@ -5,6 +5,11 @@ resource "aws_launch_template" "backend" {
 
   vpc_security_group_ids = [var.backend_sg_id]
 
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
+
   iam_instance_profile {
     name = var.instance_profile_name
   }
@@ -46,6 +51,11 @@ resource "aws_launch_template" "frontend" {
   instance_type = "t3.micro"
 
   vpc_security_group_ids = [var.frontend_sg_id]
+
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
 
   iam_instance_profile {
     name = var.instance_profile_name

@@ -2,6 +2,7 @@
 resource "aws_security_group" "alb_sg" {
   name   = "alb-sg"
   vpc_id = var.vpc_id
+  description = "Allow inbound HTTP and HTTPS from the internet to the ALB"
 
   ingress {
     description = "Allow HTTP traffic from internet"
@@ -9,11 +10,10 @@ resource "aws_security_group" "alb_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-
   }
 
   ingress {
-    description = "Allow HTTPs traffic from internet"
+    description = "Allow HTTPS traffic from internet"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -21,7 +21,7 @@ resource "aws_security_group" "alb_sg" {
   }
 
   egress {
-    description = "A"
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -30,8 +30,9 @@ resource "aws_security_group" "alb_sg" {
 }
 
 resource "aws_security_group" "frontend_sg" {
-  name   = "frontend-sg"
-  vpc_id = var.vpc_id
+  name        = "frontend-sg"
+  description = "Allow traffic from the ALB to the frontend instances"
+  vpc_id      = var.vpc_id
 
   ingress {
     description     = "Allow traffic from ALB port 80"
@@ -51,8 +52,9 @@ resource "aws_security_group" "frontend_sg" {
 }
 
 resource "aws_security_group" "backend_sg" {
-  name   = "backend-sg"
-  vpc_id = var.vpc_id
+  name        = "backend-sg"
+  description = "Allow traffic from the frontend tier to the backend instances"
+  vpc_id      = var.vpc_id
 
   ingress {
     description     = "Allow traffic from frontend"
@@ -72,8 +74,9 @@ resource "aws_security_group" "backend_sg" {
 }
 
 resource "aws_security_group" "db_sg" {
-  name   = "db-sg"
-  vpc_id = var.vpc_id
+  name        = "db-sg"
+  description = "Allow MongoDB traffic from the backend tier"
+  vpc_id      = var.vpc_id
 
   ingress {
     description     = "Allow MongoDB traffic from backend"

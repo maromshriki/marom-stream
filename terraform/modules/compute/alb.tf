@@ -3,6 +3,8 @@ resource "aws_lb" "app_alb" {
   load_balancer_type = "application"
   subnets            = var.public_subnet_ids
   security_groups    = [var.alb_sg_id]
+    enable_deletion_protection = true
+
 }
 
 resource "aws_lb_listener" "http" {
