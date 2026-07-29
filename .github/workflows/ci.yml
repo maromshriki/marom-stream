@@ -43,14 +43,14 @@ jobs:
     # Checkout Code
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0    
 
     # Secret Scanning
     - name: Gitleaks scan
       uses: gitleaks/gitleaks-action@v2
       env:
        GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
-      with:
-        fetch-depth: 0
       # Scan the repository for leaked secrets before building any images.
     
     - name: Setup Terraform
