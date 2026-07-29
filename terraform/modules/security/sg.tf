@@ -1,7 +1,7 @@
 
 resource "aws_security_group" "alb_sg" {
-  name   = "alb-sg"
-  vpc_id = var.vpc_id
+  name        = "alb-sg"
+  vpc_id      = var.vpc_id
   description = "Allow inbound HTTP and HTTPS from the internet to the ALB"
 
   ingress {

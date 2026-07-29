@@ -1,9 +1,9 @@
 resource "aws_lb" "app_alb" {
-  name_prefix        = "app-"
-  load_balancer_type = "application"
-  subnets            = var.public_subnet_ids
-  security_groups    = [var.alb_sg_id]
-    enable_deletion_protection = true
+  name_prefix                = "app-"
+  load_balancer_type         = "application"
+  subnets                    = var.public_subnet_ids
+  security_groups            = [var.alb_sg_id]
+  enable_deletion_protection = true
 
 }
 
