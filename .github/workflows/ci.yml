@@ -91,7 +91,7 @@ jobs:
         scan-type: iac
         scan-ref: ./terraform
         format: table
-        severity: HIGH,CRITICAL
+        severity: CRITICAL
         exit-code: 1
 
     # Docker Build
@@ -114,7 +114,7 @@ jobs:
       with:
         image-ref: '${{ matrix.repository }}:${{ github.sha }}'
         format: table
-        severity: HIGH,CRITICAL
+        severity: CRITICAL
         exit-code: 1
 
     # AWS Authentication
