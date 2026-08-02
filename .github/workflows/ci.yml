@@ -1,6 +1,4 @@
 # CI workflow for building, scanning, and pushing backend/frontend Docker images.
-# Runs on pushes to main. Uses a matrix to build both backend and frontend images.
-# Includes secret scanning, container vulnerability scanning, and ECR deployment.
 
 name: CI - Build, Scan & Push
 
@@ -13,9 +11,7 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
-
   build-scan-push:
-
     runs-on: ubuntu-latest
 
     permissions:
@@ -25,7 +21,6 @@ jobs:
     strategy:
       matrix:
         include:
-
           - name: backend
             repository: maromstream-backend
             dockerfile: Server/MagicStreamServer/Dockerfile
@@ -39,136 +34,99 @@ jobs:
             image_tag: frontend
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    # Checkout Code
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0    
+      - name: Gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
 
-    # Secret Scanning
-    - name: Gitleaks scan
-      uses: gitleaks/gitleaks-action@v2
-      env:
-       GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
-      # Scan the repository for leaked secrets before building any images.
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      
-    - name: Terraform Format
-      run: terraform -chdir=terraform fmt -check -recursive  
+      - name: Terraform Format
+        run: terraform -chdir=terraform fmt -check -recursive
 
-    - name: Terraform Init
-      run: terraform -chdir=terraform init -backend=false
-    
-    - name: Terraform Validate
-      run: terraform -chdir=terraform validate
+      - name: Terraform Init
+        run: terraform -chdir=terraform init -backend=false
 
+      - name: Terraform Validate
+        run: terraform -chdir=terraform validate
 
-    - name: Install TFLint
-      uses: terraform-linters/setup-tflint@v4
+      - name: Install TFLint
+        uses: terraform-linters/setup-tflint@v4
 
-    - name: Run TFLint
-      run: |
+      - name: Run TFLint
+        run: |
           cd terraform
           tflint --init
-          tflint 
+          tflint
 
-    - name: Checkov
-      uses: bridgecrewio/checkov-action@v12
-      with:
-        directory: ./terraform
-        framework: terraform    
-        soft_fail: true
-      # IaC Security Scan
-    # 
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ./terraform
+          framework: terraform
+          soft_fail: true
 
+      # Install Trivy CLI
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          trivy --version
 
-    - name: Trivy IaC scan
-      uses: aquasecurity/trivy-action@v0.33.1
-      # Scan Terraform configuration files for IaC security and misconfiguration issues.
-      with:
-        version: v0.64.1
-        scan-type: iac
-        scan-ref: ./terraform
-        format: table
-        severity: CRITICAL
-        exit-code: 1
-                 
-    # Docker Build  
-    - name: Build Docker image
-      run: |
-        docker build \
-          -t ${{ matrix.repository }}:${{ github.sha }} \
-          -f ${{ matrix.dockerfile }} \
-          ${{ matrix.context }}
-      # Build the Docker image for the current matrix entry.
+      # IaC Scan
+      - name: Trivy IaC Scan
+        run: |
+          trivy config ./terraform \
+            --severity CRITICAL \
+            --exit-code 1
 
-    # Optional local verification
-    - name: Show workflow readiness
-      run: echo "CI workflow is ready to build and push images."
+      # Docker Build
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ matrix.repository }}:${{ github.sha }} \
+            -f ${{ matrix.dockerfile }} \
+            ${{ matrix.context }}
 
-    # Container Security Scan
-    - name: Trivy image scan
-      uses: aquasecurity/trivy-action@v0.33.1
-      # Pin to a stable Trivy release instead of tracking master.
-      with:
-        version: v0.64.1
-        scan-type: image
-        image-ref: '${{ matrix.repository }}:${{ github.sha }}'
-        format: table
-        severity: CRITICAL
-        exit-code: 1
+      # Image Scan
+      - name: Trivy Image Scan
+        run: |
+          trivy image \
+            --severity CRITICAL \
+            --exit-code 1 \
+            ${{ matrix.repository }}:${{ github.sha }}
 
-    # AWS Authentication
-    - name: Configure AWS credentials (OIDC)
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-        aws-region: ${{ env.AWS_REGION }}
-      # Authenticate to AWS using OIDC, avoiding long-lived credentials.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    # ECR Login
-  
-    - name: Login to Amazon ECR
-      run: |
-        ACCOUNT_ID=$(aws sts get-caller-identity \
-          --query Account \
-          --output text)
+      - name: Login to Amazon ECR
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-        aws ecr get-login-password \
-          --region $AWS_REGION | \
-          docker login \
-          --username AWS \
-          --password-stdin \
-          $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      # Login to ECR so we can push the built image.
+          aws ecr get-login-password \
+            --region $AWS_REGION | \
+            docker login \
+            --username AWS \
+            --password-stdin \
+            $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-    # -------------------------
-    # Tag & Push
-    # -------------------------
-    - name: Push image to ECR
-      run: |
-        ACCOUNT_ID=$(aws sts get-caller-identity \
-          --query Account \
-          --output text)
+      - name: Push image to ECR
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-        REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
-        IMAGE="$REGISTRY/${{ matrix.repository }}"
+          REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          IMAGE="$REGISTRY/${{ matrix.repository }}"
 
-        docker tag \
-          ${{ matrix.repository }}:${{ github.sha }} \
-          $IMAGE:${{ github.sha }}
+          docker tag ${{ matrix.repository }}:${{ github.sha }} $IMAGE:${{ github.sha }}
+          docker tag ${{ matrix.repository }}:${{ github.sha }} $IMAGE:${{ matrix.image_tag }}
 
-        docker tag \
-          ${{ matrix.repository }}:${{ github.sha }} \
-          $IMAGE:${{ matrix.image_tag }}
-
-        docker push \
-          $IMAGE:${{ github.sha }}
-
-        docker push \
-          $IMAGE:${{ matrix.image_tag }}
-      # Tag and push both the SHA-based image and the stable image tag.
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:${{ matrix.image_tag }}
