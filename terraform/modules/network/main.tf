@@ -11,6 +11,7 @@ resource "aws_vpc" "main" {
 }
 
 # PUBLIC SUBNETS
+#checkov:skip=CKV_AWS_130: Public subnet intentionally assigns public IPs for public-facing resources
 resource "aws_subnet" "public_1" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
@@ -20,6 +21,7 @@ resource "aws_subnet" "public_1" {
   tags = { Name = "public-1" }
 }
 
+#checkov:skip=CKV_AWS_130: Public subnet intentionally assigns public IPs for public-facing resources
 resource "aws_subnet" "public_2" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.2.0/24"
@@ -165,7 +167,8 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-        Resource = "*"
+        Resource =         "${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"
+
       }
     ]
   })
