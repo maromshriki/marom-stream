@@ -1,6 +1,10 @@
-FROM golang:1.24.2 AS builder
+FROM golang:1.25.7 AS builder
 
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY go.mod go.sum ./
 
