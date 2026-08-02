@@ -50,3 +50,8 @@ module "compute" {
   acm_certificate_arn = var.acm_certificate_arn
 
 }
+
+resource "aws_wafv2_web_acl_association" "app" {
+  resource_arn = module.compute.alb_arn
+  web_acl_arn  = module.security.waf_web_acl_arn
+}

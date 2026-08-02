@@ -93,7 +93,7 @@ jobs:
         format: table
         severity: CRITICAL
         exit-code: 1
-
+                 
     # Docker Build
     - name: Build Docker image
       run: |
