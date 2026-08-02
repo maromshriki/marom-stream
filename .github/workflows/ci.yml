@@ -85,31 +85,19 @@ jobs:
       # IaC Security Scan
     # 
 
-    - name: Install Trivy manually
-      run: |
-       sudo apt-get update
-       sudo apt-get install -y wget
-       wget https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.deb
-       sudo dpkg -i trivy_0.65.0_Linux-64bit.deb
-       trivy --version
-       
-    - name: Verify Trivy
-      run: |
-        which trivy
-        trivy --version  
-
 
     - name: Trivy IaC scan
       uses: aquasecurity/trivy-action@v0.33.1
       # Scan Terraform configuration files for IaC security and misconfiguration issues.
       with:
+        version: v0.64.1
         scan-type: iac
         scan-ref: ./terraform
         format: table
         severity: CRITICAL
         exit-code: 1
                  
-    # Docker Build
+    # Docker Build  
     - name: Build Docker image
       run: |
         docker build \
@@ -127,6 +115,8 @@ jobs:
       uses: aquasecurity/trivy-action@v0.33.1
       # Pin to a stable Trivy release instead of tracking master.
       with:
+        version: v0.64.1
+        scan-type: image
         image-ref: '${{ matrix.repository }}:${{ github.sha }}'
         format: table
         severity: CRITICAL
