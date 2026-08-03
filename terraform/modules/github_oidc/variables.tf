@@ -1,11 +1,9 @@
 variable "github_owner" {
-  type    = string
-  
+  type = string
 }
 
 variable "github_repo" {
   type = string
-  
 }
 
 variable "role_name" {
