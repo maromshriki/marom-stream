@@ -16,16 +16,9 @@ RUN go build -o main .
 
 FROM gcr.io/distroless/static-debian12
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 COPY --from=builder /app/main .
-
-RUN useradd -m appuser
 
 USER appuser
 
