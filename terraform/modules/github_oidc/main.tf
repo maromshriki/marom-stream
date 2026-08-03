@@ -97,3 +97,27 @@ resource "aws_iam_role_policy" "ecr" {
   })
 
 }
+
+resource "aws_iam_role_policy" "autoscaling" {
+  name = "github-actions-autoscaling"
+
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:StartInstanceRefresh",
+          "autoscaling:DescribeInstanceRefreshes"
+        ]
+
+        Resource = "*"
+      }
+    ]
+  })
+}
