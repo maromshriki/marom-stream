@@ -2,17 +2,14 @@ FROM golang:1.25.7 AS builder
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    rm -rf /var/lib/apt/lists/*
-
 COPY go.mod go.sum ./
 
 RUN go mod download
 
 COPY . .
 
-RUN go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+
 
 FROM gcr.io/distroless/static-debian12
 
