@@ -20,7 +20,7 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 
-USER appuser
+USER nonroot
 
 EXPOSE 8080
 
