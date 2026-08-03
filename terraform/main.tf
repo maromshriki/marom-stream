@@ -55,3 +55,13 @@ resource "aws_wafv2_web_acl_association" "app" {
   resource_arn = module.compute.alb_arn
   web_acl_arn  = module.security.waf_web_acl_arn
 }
+
+module "github_oidc" {
+
+  source = "./modules/github_oidc"
+
+  github_owner = "maromshriki"
+
+  github_repo = "marom-stream"
+
+}
