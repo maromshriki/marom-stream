@@ -14,7 +14,7 @@ COPY . .
 
 RUN go build -o main .
 
-FROM debian:bookworm-slim
+FROM gcr.io/distroless/static-debian12
 
 RUN apt-get update && \
     apt-get upgrade -y && \
