@@ -30,7 +30,7 @@ resource "aws_launch_template" "backend" {
 
     SECRET=$(aws secretsmanager get-secret-value \
     --secret-id mongosecret \
-    --region us-east-1
+    --region us-east-1 \
     --query SecretString \
     --output text)
 
