@@ -17,7 +17,7 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 
-COPY --from=builder /app/certs/global-bundle.pem /app/certs/global-bundle.pem
+COPY --from=builder /app/Server/MagicStreamServer/certs/global-bundle.pem /app/certs/global-bundle.pem
 
 USER nonroot
 
