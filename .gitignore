@@ -27,5 +27,5 @@ certbot/
 
 terraform.tfvars
 *.auto.tfvars
-terraform/terraform.tfstate
+terraform/terraform.tfstate*
 terraform/terraform.tfstate.backup
