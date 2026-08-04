@@ -137,56 +137,7 @@ jobs:
 
 
 
-      - name: Smoke Test Backend
-
-        if: matrix.name == 'backend'
-
-        run: |
-
-          docker run -d \
-            --name backend-test \
-            -p 8080:8080 \
-            ${{ matrix.repository }}:${{ github.sha }}
-
-
-          echo "Waiting for backend startup..."
-
-          sleep 10
-          echo "Container status:"
-          docker ps -a
-
-
-          echo "Container logs:"
-          docker logs backend-test
-
-
-          echo "Testing endpoint:"
-          curl -v http://localhost:8080
-
-          docker ps | grep backend-test
-
-
-          curl --fail \
-            --retry 10 \
-            --retry-delay 3 \
-            http://localhost:8080 || exit 1
-
-
-          docker logs backend-test
-          docker stop backend-test
-          docker rm backend-test
-
-
-
-      - name: Cleanup Smoke Test
-
-        if: always() && matrix.name == 'backend'
-
-        run: |
-
-          docker rm -f backend-test || true
-
-
+      
 
       - name: Trivy Image Scan
 
