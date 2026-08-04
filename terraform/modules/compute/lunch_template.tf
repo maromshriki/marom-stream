@@ -18,10 +18,8 @@ resource "aws_launch_template" "backend" {
     #!/bin/bash
     set -euo pipefail
 
-    echo "DB_HOST=${var.db_endpoint}" >> /etc/environment
-
     yum update -y
-    yum install -y docker aws-cli
+    yum install -y docker aws-cli jq wget
 
     systemctl enable docker
     systemctl start docker
@@ -30,16 +28,33 @@ resource "aws_launch_template" "backend" {
     REGION="us-east-1"
     REGISTRY="$(echo "${var.backend_repository_url}" | cut -d'/' -f1)"
 
+    SECRET=$(aws secretsmanager get-secret-value \
+    --secret-id mongosecret \
+    --query SecretString \
+    --output text)
+
+    MONGODB_URI=$(echo "$SECRET" | jq -r .MONGODB_URI)
+    DATABASE_NAME=$(echo "$SECRET" | jq -r .DATABASE_NAME)
+    ALLOWED_ORIGINS=$(echo "$SECRET" | jq -r .ALLOWED_ORIGINS)
+
     aws ecr get-login-password --region "$REGION" \
       | docker login --username AWS --password-stdin "$REGISTRY"
 
+    mkdir -p /app/certs
+
+    wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
+    -O /app/certs/global-bundle.pem  
+
     docker pull "${var.backend_repository_url}:backend"
     docker run -d \
+       -v /app/certs:/app/certs \
       --name backend \
       --restart always \
       -p 8080:8080 \
       -e PORT=8080 \
-      -e DB_HOST=${var.db_endpoint} \
+      -e MONGODB_URI="$MONGODB_URI" \
+      -e DATABASE_NAME="$DATABASE_NAME" \
+      -e ALLOWED_ORIGINS="$ALLOWED_ORIGINS" \
       "${var.backend_repository_url}:backend"
   EOF
   )
@@ -71,13 +86,11 @@ resource "aws_launch_template" "frontend" {
     systemctl enable docker
     systemctl start docker
     usermod -aG docker ec2-user
-
     REGION="us-east-1"
     REGISTRY="$(echo "${var.frontend_repository_url}" | cut -d'/' -f1)"
 
     aws ecr get-login-password --region "$REGION" \
       | docker login --username AWS --password-stdin "$REGISTRY"
-
     docker pull "${var.frontend_repository_url}:frontend"
     docker run -d \
       --name frontend \

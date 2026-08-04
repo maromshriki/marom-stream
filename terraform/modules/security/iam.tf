@@ -44,12 +44,33 @@ resource "aws_iam_role_policy" "s3_access" {
           "s3:GetObject",
           "s3:DeleteObject"
         ]
-        Resource = "${var.s3_bucket_arn}/*"
+        Resource = var.s3_bucket_arn
       },
       {
         Effect   = "Allow"
         Action   = "s3:ListBucket"
         Resource = "${var.s3_bucket_arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "secrets_manager_access" {
+  name = "secrets-manager-access"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+
+        Resource = "arn:aws:secretsmanager:us-east-1:414444871239:secret:mongosecret-*"
       }
     ]
   })

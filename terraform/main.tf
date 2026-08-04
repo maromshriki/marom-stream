@@ -62,6 +62,7 @@ module "github_oidc" {
 
   github_owner = "maromshriki"
 
-  github_repo = "marom-stream"
-
+  github_repo      = "marom-stream"
+  backend_ecr_arn  = module.ecr.backend_repository_arn
+  frontend_ecr_arn = module.ecr.frontend_repository_arn
 }

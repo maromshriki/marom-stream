@@ -18,6 +18,8 @@ resource "aws_iam_role" "github_actions" {
 
   name = var.role_name
 
+  max_session_duration = 3600
+
   assume_role_policy = jsonencode({
 
     Version = "2012-10-17"
@@ -41,7 +43,7 @@ resource "aws_iam_role" "github_actions" {
           }
 
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}/${var.github_repo}:*"
+            "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}/${var.github_repo}:ref:refs/heads/main"
           }
 
         }
@@ -67,33 +69,34 @@ resource "aws_iam_role_policy" "ecr" {
     Statement = [
 
       {
-
         Effect = "Allow"
 
         Action = [
-
-          "ecr:GetAuthorizationToken",
-
-          "ecr:BatchCheckLayerAvailability",
-
-          "ecr:CompleteLayerUpload",
-
-          "ecr:InitiateLayerUpload",
-
-          "ecr:UploadLayerPart",
-
-          "ecr:PutImage",
-
-          "ecr:BatchGetImage"
-
+          "ecr:GetAuthorizationToken"
         ]
 
         Resource = "*"
+      },
 
+      {
+        Effect = "Allow"
+
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:CompleteLayerUpload",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:PutImage",
+          "ecr:BatchGetImage"
+        ]
+
+        Resource = [
+          var.backend_ecr_arn,
+          var.frontend_ecr_arn
+        ]
       }
 
     ]
-
   })
 
 }
@@ -113,7 +116,8 @@ resource "aws_iam_role_policy" "autoscaling" {
         Action = [
           "autoscaling:DescribeAutoScalingGroups",
           "autoscaling:StartInstanceRefresh",
-          "autoscaling:DescribeInstanceRefreshes"
+          "autoscaling:DescribeInstanceRefreshes",
+          "autoscaling:CancelInstanceRefresh"
         ]
 
         Resource = "*"
