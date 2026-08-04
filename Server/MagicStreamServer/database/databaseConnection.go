@@ -1,6 +1,8 @@
 package database
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"log"
 	"os"
@@ -15,7 +17,7 @@ func Connect() *mongo.Client {
 	err := godotenv.Load(".env")
 
 	if err != nil {
-		log.Println("Warning: unable to fund .env file")
+		log.Println("Warning: unable to find .env file")
 	}
 
 	MongoDb := os.Getenv("MONGODB_URI")
@@ -26,7 +28,24 @@ func Connect() *mongo.Client {
 
 	fmt.Println("MongoDB URI: ", MongoDb)
 
-	clientOptions := options.Client().ApplyURI(MongoDb)
+	caCert, err := os.ReadFile("/app/certs/global-bundle.pem")
+	if err != nil {
+		log.Fatal("Failed to read CA file:", err)
+	}
+
+	certPool := x509.NewCertPool()
+
+	if ok := certPool.AppendCertsFromPEM(caCert); !ok {
+		log.Fatal("Failed to append CA certificate")
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs: certPool,
+	}
+
+	clientOptions := options.Client().
+		ApplyURI(MongoDb).
+		SetTLSConfig(tlsConfig)
 
 	client, err := mongo.Connect(clientOptions)
 
@@ -48,7 +67,7 @@ func OpenCollection(collectionName string, client *mongo.Client) *mongo.Collecti
 
 	databaseName := os.Getenv("DATABASE_NAME")
 
-	fmt.Println("DATABASE_NAME: ", databaseName)
+	fmt.Println("DATABASE_NAME: ", "MongoDB connected to DocumentDB")
 
 	collection := client.Database(databaseName).Collection(collectionName)
 
