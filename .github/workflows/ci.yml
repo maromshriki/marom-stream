@@ -152,7 +152,16 @@ jobs:
           echo "Waiting for backend startup..."
 
           sleep 10
+          echo "Container status:"
+          docker ps -a
 
+
+          echo "Container logs:"
+          docker logs backend-test
+
+
+          echo "Testing endpoint:"
+          curl -v http://localhost:8080
 
           docker ps | grep backend-test
 
