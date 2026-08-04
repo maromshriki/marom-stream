@@ -173,6 +173,8 @@ jobs:
 
 
           docker logs backend-test
+          docker stop backend-test
+          docker rm backend-test
 
 
 
