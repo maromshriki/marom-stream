@@ -101,6 +101,27 @@ jobs:
             --exit-code 1 \
             ${{ matrix.repository }}:${{ github.sha }}
 
+      - name: Smoke Test Backend
+        if: matrix.name == 'backend'
+        run: |
+          docker run -d \
+            --name backend-test \
+            -p 8080:8080 \
+            ${{ matrix.repository }}:${{ github.sha }}
+          sleep 10
+          docker ps | grep backend-test
+          curl --fail http://localhost:8080 || exit 1
+          docker logs backend-test
+          docker stop backend-test
+          docker rm backend-test      
+      
+
+
+      - name: Cleanup Smoke Test
+        if: always() && matrix.name == 'backend'
+        run: |
+          docker rm -f backend-test || true
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
