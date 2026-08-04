@@ -17,6 +17,8 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 
+COPY --from=builder /app/certs/global-bundle.pem /app/certs/global-bundle.pem
+
 USER nonroot
 
 EXPOSE 8080

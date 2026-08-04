@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-
+    "context"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -50,11 +50,18 @@ func Connect() *mongo.Client {
 	client, err := mongo.Connect(clientOptions)
 
 	if err != nil {
-		return nil
+    log.Fatal("Failed to create Mongo client:", err)
+    }
+
+	err = client.Ping(context.Background(), nil)
+	if err != nil {
+    log.Fatal("Failed to ping DocumentDB:", err)
 	}
 
+	log.Println("Connected successfully to DocumentDB")
+
 	return client
-}
+	}
 
 //var Client *mongo.Client = DBInstance()
 
