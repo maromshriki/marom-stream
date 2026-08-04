@@ -1,14 +1,3 @@
-resource "aws_security_group" "db_sg" {
-  vpc_id = var.vpc_id
-
-  ingress {
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [var.backend_sg_id]
-  }
-}
-
 resource "aws_docdb_subnet_group" "docdb_subnet_group" {
   name       = "docdb-subnet-group"
   subnet_ids = var.private_subnet_ids
@@ -23,7 +12,7 @@ resource "aws_docdb_cluster" "docdb" {
   preferred_backup_window = "07:00-09:00"
   skip_final_snapshot     = true
   db_subnet_group_name    = aws_docdb_subnet_group.docdb_subnet_group.name
-  vpc_security_group_ids  = [aws_security_group.db_sg.id]
+  vpc_security_group_ids  = [var.db_sg_id]
   storage_encrypted       = true
 }
 

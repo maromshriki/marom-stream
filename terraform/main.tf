@@ -20,6 +20,7 @@ module "data" {
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnet_ids
   backend_sg_id      = module.security.backend_sg_id
+  db_sg_id           = module.security.db_sg_id
   docdb_username     = var.docdb_username
   docdb_password     = var.docdb_password
 }

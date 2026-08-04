@@ -71,26 +71,27 @@ resource "aws_security_group" "backend_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+}
+resource "aws_security_group" "db_sg" {
+  vpc_id = var.vpc_id
+
+  name = "db-sg"
+}
+resource "aws_vpc_security_group_ingress_rule" "db_from_backend" {
+  security_group_id            = aws_security_group.db_sg.id
+  referenced_security_group_id = aws_security_group.backend_sg.id
+
+  from_port   = 27017
+  to_port     = 27017
+  ip_protocol = "tcp"
 }
 
-resource "aws_security_group" "db_sg" {
-  name        = "db-sg"
-  description = "Allow MongoDB traffic from the backend tier"
-  vpc_id      = var.vpc_id
+resource "aws_vpc_security_group_egress_rule" "backend_to_db" {
+  security_group_id            = aws_security_group.backend_sg.id
+  referenced_security_group_id = aws_security_group.db_sg.id
 
-  ingress {
-    description     = "Allow MongoDB traffic from backend"
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [aws_security_group.backend_sg.id]
-  }
-
-  egress {
-    description = "Allow all outbound traffic"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  from_port   = 27017
+  to_port     = 27017
+  ip_protocol = "tcp"
 }
