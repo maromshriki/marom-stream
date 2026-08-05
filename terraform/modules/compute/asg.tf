@@ -12,13 +12,13 @@ resource "aws_autoscaling_group" "backend" {
     version = "$Latest"
   }
   instance_refresh {
-  strategy = "Rolling"
+    strategy = "Rolling"
 
-  preferences {
-    min_healthy_percentage = 100
-    instance_warmup        = 300
+    preferences {
+      min_healthy_percentage = 100
+      instance_warmup        = 300
+    }
   }
-}
   tag {
     key                 = "Name"
     value               = "backend-asg"
@@ -40,13 +40,13 @@ resource "aws_autoscaling_group" "frontend" {
     version = "$Latest"
   }
   instance_refresh {
-  strategy = "Rolling"
+    strategy = "Rolling"
 
-  preferences {
-    min_healthy_percentage = 100
-    instance_warmup        = 300
+    preferences {
+      min_healthy_percentage = 100
+      instance_warmup        = 300
+    }
   }
-}
   tag {
     key                 = "Name"
     value               = "frontend-asg"
