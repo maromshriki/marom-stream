@@ -11,7 +11,14 @@ resource "aws_autoscaling_group" "backend" {
     id      = aws_launch_template.backend.id
     version = "$Latest"
   }
+  instance_refresh {
+  strategy = "Rolling"
 
+  preferences {
+    min_healthy_percentage = 100
+    instance_warmup        = 300
+  }
+}
   tag {
     key                 = "Name"
     value               = "backend-asg"
@@ -32,7 +39,14 @@ resource "aws_autoscaling_group" "frontend" {
     id      = aws_launch_template.frontend.id
     version = "$Latest"
   }
+  instance_refresh {
+  strategy = "Rolling"
 
+  preferences {
+    min_healthy_percentage = 100
+    instance_warmup        = 300
+  }
+}
   tag {
     key                 = "Name"
     value               = "frontend-asg"
