@@ -23,14 +23,6 @@ variable "db_endpoint" {
   type = string
 }
 
-variable "user_secret_name" {
-  type = string
-}
-
-variable "password_secret_name" {
-  type = string
-}
-
 variable "s3_bucket_arn" {
   type = string
 }
@@ -43,3 +35,6 @@ variable "s3_bucket_name" {
   type = string
 }
 
+variable "mongo_secret_name" {
+  type = string
+}

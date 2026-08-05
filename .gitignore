@@ -30,3 +30,8 @@ terraform.tfvars
 terraform/terraform.tfstate*
 terraform/terraform.tfstate.backup
 *pem
+
+
+lambda/botocore/
+lambda/boto3/
+lambda/dns/

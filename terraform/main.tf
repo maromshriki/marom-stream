@@ -70,15 +70,14 @@ module "github_oidc" {
 }
 
 module "lambda" {
-  source               = "./modules/lambda"
-  vpc_id               = module.network.vpc_id
-  private_subnet_ids   = module.network.private_subnet_ids
-  db_sg_id             = module.security.db_sg_id
-  s3_bucket_arn        = module.data.bucket_arn
-  s3_kms_key_arn       = module.data.kms_key_arn
-  db_endpoint          = module.data.db_endpoint
-  kms_key_arn          = module.data.kms_key_arn
-  s3_bucket_name       = module.data.bucket_name
-  user_secret_name     = "userdatabase"
-  password_secret_name = "passworddatabase"
+  source             = "./modules/lambda"
+  vpc_id             = module.network.vpc_id
+  private_subnet_ids = module.network.private_subnet_ids
+  db_sg_id           = module.security.db_sg_id
+  s3_bucket_arn      = module.data.bucket_arn
+  s3_kms_key_arn     = module.data.kms_key_arn
+  db_endpoint        = module.data.db_endpoint
+  kms_key_arn        = module.data.kms_key_arn
+  s3_bucket_name     = module.data.bucket_name
+  mongo_secret_name  = "mongosecret"
 }
