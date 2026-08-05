@@ -9,8 +9,11 @@ The project demonstrates how to provision, secure, build, scan, and deploy a pro
 The primary goal of this project was not only to deploy an application, but also to design a secure, scalable, and automated infrastructure similar to what would be expected in a real production environment.
 
 ---
+#  Architecture
 
-# Architecture
+![AWS Architecture]("C:\Users\marom\Downloads\marom-stream.drawio.png")
+
+# Security Architecture
 
 ```
                  GitHub
