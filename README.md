@@ -11,7 +11,7 @@ The primary goal of this project was not only to deploy an application, but also
 ---
 #  Architecture
 
-![AWS Architecture](images/marom-stream.drawio.png)
+![AWS Architecture](images/marom-stream.drawio%20.png)
 
 # Security Architecture
 
