@@ -5,7 +5,6 @@ resource "aws_lb" "app_alb" {
   security_groups            = [var.alb_sg_id]
   enable_deletion_protection = true
   drop_invalid_header_fields = true
-
 }
 
 resource "aws_lb_listener" "http" {
@@ -17,8 +16,8 @@ resource "aws_lb_listener" "http" {
     type = "redirect"
 
     redirect {
-      port        = "443"
       protocol    = "HTTPS"
+      port        = "443"
       status_code = "HTTP_301"
     }
   }
@@ -31,24 +30,26 @@ resource "aws_lb_listener" "https" {
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = var.acm_certificate_arn
 
+  # כל מה שאינו /api ילך לפרונטאנד
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.app_tg.arn
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
   }
 }
 
-resource "aws_lb_listener_rule" "frontend" {
+# כל קריאה ל-/api תגיע לבקאנד
+resource "aws_lb_listener_rule" "backend_api" {
   listener_arn = aws_lb_listener.https.arn
-  priority     = 100
+  priority     = 10
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    target_group_arn = aws_lb_target_group.app_tg.arn
   }
 
   condition {
     path_pattern {
-      values = ["/*"]
+      values = ["/api/*"]
     }
   }
 }
@@ -62,6 +63,7 @@ resource "aws_route53_record" "frontend_alias" {
   zone_id = data.aws_route53_zone.selected.zone_id
   name    = var.domain_name
   type    = "A"
+
   alias {
     name                   = aws_lb.app_alb.dns_name
     zone_id                = aws_lb.app_alb.zone_id
@@ -76,7 +78,9 @@ resource "aws_lb_target_group" "app_tg" {
   vpc_id   = var.vpc_id
 
   health_check {
+    enabled             = true
     path                = "/hello"
+    protocol            = "HTTP"
     matcher             = "200"
     interval            = 30
     timeout             = 5
@@ -92,16 +96,13 @@ resource "aws_lb_target_group" "frontend_tg" {
   vpc_id   = var.vpc_id
 
   health_check {
-    enabled  = true
-    path     = "/hello"
-    protocol = "HTTP"
-
-    interval = 60
-    timeout  = 10
-
+    enabled             = true
+    path                = "/hello"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 60
+    timeout             = 10
     healthy_threshold   = 2
     unhealthy_threshold = 5
-
-    matcher = "200"
   }
 }
