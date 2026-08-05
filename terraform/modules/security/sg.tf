@@ -21,11 +21,19 @@ resource "aws_security_group" "alb_sg" {
   }
 
   egress {
-    description = "Allow all outbound traffic"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "Allow ALB to connect to frontend on port 80"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.frontend_sg.id]
+  }
+
+  egress {
+    description     = "Allow ALB to connect to backend on port 8080"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.backend_sg.id]
   }
 }
 
@@ -34,19 +42,26 @@ resource "aws_security_group" "frontend_sg" {
   description = "Allow traffic from the ALB to the frontend instances"
   vpc_id      = var.vpc_id
 
-  ingress {
-    description     = "Allow traffic from ALB port 80"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id]
-  }
-
   egress {
-    description = "Allow all outbound traffic"
+    description     = "Allow frontend to connect to backend on port 8080"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.backend_sg.id]
+  }
+  egress {
+    description = "Allow HTTPS outbound"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow DNS resolution"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -56,23 +71,61 @@ resource "aws_security_group" "backend_sg" {
   description = "Allow traffic from the frontend tier to the backend instances"
   vpc_id      = var.vpc_id
 
-  ingress {
-    description     = "Allow traffic from frontend"
-    from_port       = 8080
-    to_port         = 8080
+  egress {
+    description     = "Allow backend to MongoDB"
+    from_port       = 27017
+    to_port         = 27017
     protocol        = "tcp"
-    security_groups = [aws_security_group.frontend_sg.id]
+    security_groups = [aws_security_group.db_sg.id]
   }
 
   egress {
-    description = "Allow all outbound traffic"
+    description = "Allow DNS resolution"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow HTTPS outbound for AWS services"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
 }
+
+resource "aws_security_group_rule" "frontend_from_alb" {
+  type                     = "ingress"
+  description              = "Allow traffic from ALB port 80"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.frontend_sg.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
+resource "aws_security_group_rule" "backend_from_frontend" {
+  type                     = "ingress"
+  description              = "Allow traffic from frontend on port 8080"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.backend_sg.id
+  source_security_group_id = aws_security_group.frontend_sg.id
+}
+
+resource "aws_security_group_rule" "backend_from_alb" {
+  type                     = "ingress"
+  description              = "Allow traffic from ALB on port 8080"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.backend_sg.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
 resource "aws_security_group" "db_sg" {
   vpc_id = var.vpc_id
 
