@@ -65,3 +65,38 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
     }
   }
 }
+
+resource "aws_s3_object" "seed_movies" {
+
+  bucket = aws_s3_bucket.app_bucket.id
+
+  key = "seed/movies.json"
+
+  source = "${path.root}/../magic-stream-seed-data/movies.json"
+
+  etag = filemd5("${path.root}/../magic-stream-seed-data/movies.json")
+}
+
+
+resource "aws_s3_object" "seed_users" {
+
+  bucket = aws_s3_bucket.app_bucket.id
+
+  key = "seed/users.json"
+
+  source = "${path.root}/../magic-stream-seed-data/users.json"
+
+  etag = filemd5("${path.root}/../magic-stream-seed-data/users.json")
+}
+
+
+resource "aws_s3_object" "seed_genres" {
+
+  bucket = aws_s3_bucket.app_bucket.id
+
+  key = "seed/genres.json"
+
+  source = "${path.root}/../magic-stream-seed-data/genres.json"
+
+  etag = filemd5("${path.root}/../magic-stream-seed-data/genres.json")
+}

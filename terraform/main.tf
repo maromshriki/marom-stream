@@ -11,6 +11,7 @@ module "security" {
 
   vpc_id        = module.network.vpc_id
   s3_bucket_arn = module.data.bucket_arn
+  lambda_sg_id  = module.lambda.lambda_sg_id
 
 }
 
@@ -66,4 +67,18 @@ module "github_oidc" {
   github_repo      = "marom-stream"
   backend_ecr_arn  = module.ecr.backend_repository_arn
   frontend_ecr_arn = module.ecr.frontend_repository_arn
+}
+
+module "lambda" {
+  source               = "./modules/lambda"
+  vpc_id               = module.network.vpc_id
+  private_subnet_ids   = module.network.private_subnet_ids
+  db_sg_id             = module.security.db_sg_id
+  s3_bucket_arn        = module.data.bucket_arn
+  s3_kms_key_arn       = module.data.kms_key_arn
+  db_endpoint          = module.data.db_endpoint
+  kms_key_arn          = module.data.kms_key_arn
+  s3_bucket_name       = module.data.bucket_name
+  user_secret_name     = "userdatabase"
+  password_secret_name = "passworddatabase"
 }
