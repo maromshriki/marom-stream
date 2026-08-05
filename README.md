@@ -11,7 +11,7 @@ The primary goal of this project was not only to deploy an application, but also
 ---
 #  Architecture
 
-![AWS Architecture](images/marom-stream.drawio.png)
+![AWS Architecture](images/marom-stream.drawio.png(1))
 
 # Security Architecture
 
@@ -77,7 +77,30 @@ The primary goal of this project was not only to deploy an application, but also
 * Remote-ready Architecture
 
 ---
+## Data Initialization Flow
 
+The application uses AWS Lambda for database initialization.
+
+During deployment:
+
+1. Movie seed files are stored in Amazon S3.
+2. Lambda function runs inside the VPC.
+3. Lambda retrieves database credentials from AWS Secrets Manager.
+4. Lambda establishes a TLS connection to Amazon DocumentDB.
+5. Initial movie data is inserted into the movies collection.
+
+Architecture:
+
+S3 → Lambda → DocumentDB
+    Bootstrap Data Flow
+
+                    S3 Bucket
+                        |
+                  movies.json
+                        |
+                    Lambda
+                        |
+                 DocumentDB Seed
 ### Containers
 
 * Docker
